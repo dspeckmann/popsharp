@@ -35,8 +35,8 @@ namespace DSpeckmann.PopSharpClient
         private void emailListBox_SelectedValueChanged(object sender, EventArgs e)
         {
             Email selectedEmail = (Email)emailListBox.SelectedItem;
-            rawTextBox.Text = selectedEmail.Message;
-            emailView.DocumentText = selectedEmail.Message;
+            rawEmailView.Text = selectedEmail.Message;
+            renderedEmailView.DocumentText = selectedEmail.Message;
         }
     }
 }
