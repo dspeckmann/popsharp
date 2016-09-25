@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PopSharp", "PopSharp\PopSharp.csproj", "{E77F1714-3851-4E17-B382-8FFE5DC74C62}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PopSharpClient", "PopSharpClient\PopSharpClient.csproj", "{2648581F-8C05-49BF-BEE3-82289FCD992C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{E77F1714-3851-4E17-B382-8FFE5DC74C62} = {E77F1714-3851-4E17-B382-8FFE5DC74C62}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
