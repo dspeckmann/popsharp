@@ -43,55 +43,16 @@ namespace DSpeckmann.PopSharp
                     switch(key)
                     {
                         case "Subject":
-                            // Decode subjects according to RFC 1432 with the following regex: =\?(.*)\?[B,Q]\?(.*)\?=
-                            Regex regex = new Regex("=\\?(.*)\\?([B,Q])\\?(.*)\\?=");
-                            Match match = regex.Match(value);
-                            if(match.Groups.Count == 4)
-                            {
-                                string charsetString = match.Groups[1].ToString();
-                                string encodingString = match.Groups[2].ToString();
-                                string encodedSubject = match.Groups[3].ToString();
-
-                                Encoding encoding = Encoding.GetEncoding(charsetString);
-                                if(encodingString == "B")
-                                {
-                                    byte[] subjectBytes = Convert.FromBase64String(encodedSubject);
-                                    Subject = encoding.GetString(subjectBytes);
-                                }
-                                else // Q
-                                {
-                                    // Q-Encoding according to RFC 1432: =([0-9]|[A-F]){2}
-                                    // Support for multiple byte long code points: (=(([A-F]|[0-9]){2}))+ (got to strip the equal signs though)
-                                    Regex r2 = new Regex("(=(([A-F]|[0-9]){2}))+");
-                                    MatchCollection matches = r2.Matches(encodedSubject);
-                                    List<KeyValuePair<int, string>> replacements = new List<KeyValuePair<int, string>>();
-                                    for(int j = matches.Count - 1; j >= 0; j--)
-                                    {
-                                        string matchedString = matches[j].ToString();
-                                        string hexString = matchedString.Replace("=", string.Empty);
-                                        // Convert from base 16 string to integer to byte array
-                                        byte[] bytes = BitConverter.GetBytes(Convert.ToInt32(hexString, 16));
-                                        bytes = bytes.Reverse().Skip(1).ToArray();
-                                        string decodedString = encoding.GetString(bytes);
-                                        Console.WriteLine("Decoded: " + decodedString);
-                                        encodedSubject = encodedSubject.Replace(matchedString, decodedString);
-                                    }
-                                    Subject = encodedSubject.Replace('_', ' ');
-                                }
-                            }
-                            else
-                            {
-                                Subject = value;
-                            }
+                            Subject = decodeHeader(value);
                             break;
                         case "From":
-                            Sender = value;
+                            Sender = decodeHeader(value);
                             break;
                         case "To":
-                            Recipient = value;
+                            Recipient = decodeHeader(value);
                             break;
                         case "Date":
-                            Date = DateTime.Parse(value);
+                            Date = DateTime.Parse(decodeHeader(value));
                             break;
                     }
                 }
@@ -102,6 +63,46 @@ namespace DSpeckmann.PopSharp
                 }
             }
             Message = stringBuilder.ToString();
+        }
+
+        private string decodeHeader(string originalHeader)
+        {
+            // Decode headers according to RFC 1342 with the following regex: =\?(.*)\?[B,Q]\?(.*)\?=
+            Regex regex = new Regex("=\\?(.*)\\?([B,Q])\\?(.*)\\?=");
+            Match match = regex.Match(originalHeader);
+
+            if (match.Groups.Count < 4) return originalHeader;
+            
+            string charsetString = match.Groups[1].ToString();
+            string encodingString = match.Groups[2].ToString();
+            string encodedSubject = match.Groups[3].ToString();
+
+            Encoding encoding = Encoding.GetEncoding(charsetString);
+            if (encodingString == "B")
+            {
+                byte[] subjectBytes = Convert.FromBase64String(encodedSubject);
+                return encoding.GetString(subjectBytes);
+            }
+            else
+            {
+                // Q-Encoding according to RFC 1342: =([0-9]|[A-F]){2}
+                // Support for multiple byte long code points: (=(([A-F]|[0-9]){2}))+ (got to strip the equal signs though)
+                Regex r2 = new Regex("(=(([A-F]|[0-9]){2}))+");
+                MatchCollection matches = r2.Matches(encodedSubject);
+                List<KeyValuePair<int, string>> replacements = new List<KeyValuePair<int, string>>();
+                for (int j = matches.Count - 1; j >= 0; j--)
+                {
+                    string matchedString = matches[j].ToString();
+                    string hexString = matchedString.Replace("=", string.Empty);
+                    // Convert from base 16 string to integer to byte array
+                    byte[] bytes = BitConverter.GetBytes(Convert.ToInt32(hexString, 16));
+                    bytes = bytes.Reverse().Skip(1).ToArray();
+                    string decodedString = encoding.GetString(bytes);
+                    Console.WriteLine("Decoded: " + decodedString);
+                    encodedSubject = encodedSubject.Replace(matchedString, decodedString);
+                }
+                return encodedSubject.Replace('_', ' ');
+            }
         }
     }
 }
